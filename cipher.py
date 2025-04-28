@@ -24,24 +24,24 @@ def rail_fence_encode(string, key):
     post: returns a single string that is encoded with
         rail fence algorithm
     """
-    if key < 2 or key >= len(string):
+    n = len(string)
+    if key < 2 or key >= n:
         return string
+
     rails = [[] for _ in range(key)]
-    row = 0
-    direction = 1
+    row, step = 0, 1
     for ch in string:
         rails[row].append(ch)
         if row == 0:
-            direction = 1
+            step = 1
         elif row == key - 1:
-            direction = -1
-        row += direction
-    result = ""
-    for track in rails:
-        result += "".join(track)
-    return result
+            step = -1
+        row += step
+
+    return "".join("".join(r) for r in rails)
 
 
+# TODO: implement this function. You may delete this comment after you are done.
 def rail_fence_decode(string, key):
     """
     pre: string is a string of characters and key is a positive
@@ -51,39 +51,37 @@ def rail_fence_decode(string, key):
         rail fence algorithm
     """
     n = len(string)
-    marker = [[False] * n for _ in range(key)]
-    row = 0
-    direction = 1
-    for col in range(n):
-        marker[row][col] = True
-        if row == 0:
-            direction = 1
-        elif row == key - 1:
-            direction = -1
-        row += direction
+    if key < 2 or key >= n:
+        return string
 
-    grid = [[''] * n for _ in range(key)]
+    # determine how many chars go on each rail
+    cycle = 2 * key - 2
+    rail_counts = [0] * key
+    rail_for_pos = []
+    for i in range(n):
+        m = i % cycle
+        rail = m if m < key else cycle - m
+        rail_for_pos.append(rail)
+        rail_counts[rail] += 1
+
+    # slice the encoded string into per-rail chunks
+    chunks = []
     idx = 0
-    for r in range(key):
-        for c in range(n):
-            if marker[r][c]:
-                grid[r][c] = string[idx]
-                idx += 1
+    for count in rail_counts:
+        chunks.append(string[idx : idx + count])
+        idx += count
 
-    decoded = ""
-    row = 0
-    direction = 1
-    for col in range(n):
-        decoded += grid[row][col]
-        if row == 0:
-            direction = 1
-        elif row == key - 1:
-            direction = -1
-        row += direction
+    # rebuild in zig-zag order
+    pointers = [0] * key
+    decoded = []
+    for rail in rail_for_pos:
+        decoded.append(chunks[rail][pointers[rail]])
+        pointers[rail] += 1
 
-    return decoded
+    return "".join(decoded)
 
 
+# TODO: implement this function. You may delete this comment after you are done.
 def filter_string(string):
     """
     pre: string is a string of characters
@@ -91,14 +89,10 @@ def filter_string(string):
         removes all digits, punctuation marks, and spaces. It
         returns a single string with only lower case characters
     """
-    s = string.lower()
-    out = ""
-    for ch in s:
-        if 'a' <= ch <= 'z':
-            out += ch
-    return out
+    return "".join(ch for ch in string.lower() if 'a' <= ch <= 'z')
 
 
+# TODO: implement this function. You may delete this comment after you are done.
 def encode_character(p, s):
     """
     pre: p is a character in the pass phrase and s is a character
@@ -111,6 +105,7 @@ def encode_character(p, s):
     return chr((val + shift) % 26 + ord('a'))
 
 
+# TODO: implement this function. You may delete this comment after you are done.
 def decode_character(p, s):
     """
     pre: p is a character in the pass phrase and s is a character
@@ -123,6 +118,7 @@ def decode_character(p, s):
     return chr((val - shift) % 26 + ord('a'))
 
 
+# TODO: implement this function. You may delete this comment after you are done.
 def vigenere_encode(string, phrase):
     """
     pre: string is a string of characters and phrase is a pass phrase
@@ -133,12 +129,13 @@ def vigenere_encode(string, phrase):
     key = filter_string(phrase)
     if not key:
         return ""
-    out = ""
-    for i, ch in enumerate(text):
-        out += encode_character(key[i % len(key)], ch)
-    return out
+    return "".join(
+        encode_character(key[i % len(key)], ch)
+        for i, ch in enumerate(text)
+    )
 
 
+# TODO: implement this function. You may delete this comment after you are done.
 def vigenere_decode(string, phrase):
     """
     pre: string is a string of characters and phrase is a pass phrase
@@ -149,42 +146,43 @@ def vigenere_decode(string, phrase):
     key = filter_string(phrase)
     if not text or not key:
         return ""
-    out = ""
-    for i, ch in enumerate(text):
-        out += decode_character(key[i % len(key)], ch)
-    return out
+    return "".join(
+        decode_character(key[i % len(key)], ch)
+        for i, ch in enumerate(text)
+    )
 
 
+# TODO: implement this function. You may delete this comment after you are done.
 def main():
     """Main function that reads stdin and runs each cipher"""
     # read the plain text from stdin (terminal/input)
     plaintext = input()
     # read the key from stdin (terminal/input)
-    k = int(input())
+    key = int(input())
     # encrypt and print the encoded text using rail fence cipher
-    encrypted = rail_fence_encode(plaintext, k)
+    encoded_text = rail_fence_encode(plaintext, key)
     print(f"Plain Text: {plaintext}")
-    print(f"Key: {k}")
-    print(f"Encoded Text: {encrypted}\n")
+    print(f"Key: {key}")
+    print(f"Encoded Text: {encoded_text}\n")
 
     # read encoded text from stdin (terminal/input)
     cipher_in = input()
     # read the key from stdin (terminal/input)
-    k2 = int(input())
+    key2 = int(input())
     # decrypt and print the plain text using rail fence cipher
-    decrypted = rail_fence_decode(cipher_in, k2)
+    decoded_text = rail_fence_decode(cipher_in, key2)
     print(f"Encoded Text: {cipher_in}")
-    print(f"Enter Key: {k2}")
-    print(f"Decoded Text: {decrypted}\n")
+    print(f"Enter Key: {key2}")
+    print(f"Decoded Text: {decoded_text}\n")
 
     # read the plain text from stdin (terminal/input)
     pt2 = input()
     # read the pass phrase from stdin (terminal/input)
-    passphrase = input()
+    pass_phrase = input()
     # encrypt and print the encoded text using Vigenere cipher
-    enc2 = vigenere_encode(pt2, passphrase)
+    enc2 = vigenere_encode(pt2, pass_phrase)
     print(f"Plain Text: {pt2}")
-    print(f"Pass Phrase: {passphrase}")
+    print(f"Pass Phrase: {pass_phrase}")
     print(f"Encoded Text: {enc2}\n")
 
     # read the encoded text from stdin (terminal/input)
